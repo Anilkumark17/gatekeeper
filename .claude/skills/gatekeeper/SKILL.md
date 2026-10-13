@@ -15,16 +15,13 @@ Never read the whole repo. Work from `gk context`.
 
 1. **Context first.** `gk context --task "<the request>"`. Work from the pack. Open a file only when the pack's hop-0 source is truncated or missing what you need. Note any `?` edges: static analysis could not resolve them (dynamic dispatch, DI, event bus, ORM, cross-service). Treat them as unknown, not absent.
 
-2. **Decompose into 3 to 7 subtasks.** Each is a unit of the change (a thing the code now does or a module that now exists), never a step of your own process. Good: "Rate limit counter per API key", "Quota check in request middleware". Bad: "Read the files", "Write tests", "Think about edge cases".
-   `gk plan --feature "<name>" --task "<A>" --task "<B>" ...`
-   The panel renders the tree the moment this runs.
+2. **Decompose into 3 to 7 subtasks.** Each is a unit of the change (a thing the code now does or a module that now exists), never a step of your own process. Give each subtask nodes: the files or `file:symbol` it touches, with a one-line note on what each is about. Keep it minimal.
+   `gk_plan` with `tasks: [{ title: "Quota check in middleware", nodes: [{ target: "src/quota.ts:checkQuota", note: "reject over-limit keys" }] }, ...]`
+   The panel shows the tree the moment this runs. A hook blocks Edit/Write until the developer approves.
 
-3. **One interruption.** Say exactly: `Edit any of these in the panel, re-prompt, or say go.` Then stop and wait. This is the only wait in the mode.
-   - Small correction from the developer: apply it (`gk edit --id ST-002 --title "..."`, or `gk remove --id ST-003`) and proceed without asking again.
-   - Different shape: `gk plan --feature "<name>" --replace --task ...` and redecompose from scratch.
-   - If the developer removed or renamed subtasks in the panel, `gk tree` shows the current plan. The tree on disk is the truth, not your memory of it.
+3. **Wait for approval, one subtask at a time.** After `gk_plan`, say: `Approve ST-001 in the panel.` Then stop. The developer presses Approve on the current subtask. Small corrections via the panel or `gk_edit`/`gk_remove`; different shape: `gk_plan` with `replace`.
 
-4. **Implement in order.** One line per subtask when you start it. No narration between.
+4. **Implement from the slice.** Call `gk_next`. It returns only the approved subtask, its nodes and context for those nodes. Write code from that, nothing else. Do not call `gk_tree` to re-read the whole plan.
 
 5. **Record immediately after each subtask's code is written. Never batch at the end.** Batching is how decisions get lost, which is the one thing this product exists to prevent.
    ```

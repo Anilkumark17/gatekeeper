@@ -23,7 +23,7 @@ class Controller implements vscode.HoverProvider, vscode.CodeLensProvider {
   lastRendered: any = null;
   focus: string | null = null;
   hops = 1;
-  mode: 'graph' | 'tree' | 'debug' = 'graph';
+  mode: 'graph' | 'tree' | 'debug' = 'tree';
   debug: { result: SuspectResult; checked: Map<string, string> } | null = null;
 
   private rendered = new Map<string, string>();
@@ -81,13 +81,16 @@ class Controller implements vscode.HoverProvider, vscode.CodeLensProvider {
     const intentW = mk(`${GK_DIR}/{intent,outcomes}.jsonl`);
     const onIntent = debounce(() => this.onIntentChanged(), 80);
     intentW.onDidChange(onIntent); intentW.onDidCreate(onIntent); intentW.onDidDelete(onIntent);
+    const gateW = mk(`${GK_DIR}/gate.json`);
+    const onGate = debounce(() => this.onGateChanged(), 60);
+    gateW.onDidChange(onGate); gateW.onDidCreate(onGate);
     const srcW = mk('**/*.{ts,tsx,js,jsx,mjs,cjs,py}');
     const onSrc = (u: vscode.Uri) => this.queueFile(u.fsPath);
     srcW.onDidChange(onSrc); srcW.onDidCreate(onSrc); srcW.onDidDelete(onSrc);
     const gitW = mk('.git/logs/HEAD');
     const onCommit = debounce(() => void this.outer(), 400);
     gitW.onDidChange(onCommit); gitW.onDidCreate(onCommit);
-    this.ctx.subscriptions.push(intentW, srcW, gitW,
+    this.ctx.subscriptions.push(intentW, gateW, srcW, gitW,
       vscode.workspace.onDidSaveTextDocument((d) => this.queueFile(d.uri.fsPath, 0)),
       vscode.window.onDidChangeTextEditorSelection(debounce((e: vscode.TextEditorSelectionChangeEvent) => this.onSelection(e), 90)),
       vscode.window.onDidChangeVisibleTextEditors(() => this.paintEditors()),
@@ -149,6 +152,18 @@ class Controller implements vscode.HoverProvider, vscode.CodeLensProvider {
   }
 
   /* ------------------------------------------------------------------ intent index */
+
+  /** A prompt just hit the hook (or the plan landed): show the tree, not the graph. */
+  private onGateChanged() {
+    if (!this.ws) return;
+    const g = this.ws.store.readGate();
+    if (g.pending) {
+      this.mode = 'tree';
+      this.openPanel();
+      this.post({ type: 'mode', mode: 'tree' });
+    }
+    this.postTree();
+  }
 
   private onIntentChanged() {
     this.refreshIntent();
@@ -362,6 +377,10 @@ class Controller implements vscode.HoverProvider, vscode.CodeLensProvider {
         break;
       case 'check':
         this.doCheck(m.id, m.result);
+        break;
+      case 'approve':
+        ops.approve(this.ws, { id: m.id });
+        this.postTree();
         break;
       case 'removeTask':
         ops.remove(this.ws, { id: m.id });

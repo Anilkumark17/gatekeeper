@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { GK_DIR } from './config.js';
-import type { Snapshot, Subtask, SubtaskStatus } from './types.js';
+import type { PlanNode, Snapshot, Subtask, SubtaskStatus } from './types.js';
 
 /* ---------------- event shapes ---------------- */
 
 export type IntentEvent =
-  | { k: 'plan'; id: string; feature: string; title: string; order: number; ts: string }
+  | { k: 'plan'; id: string; feature: string; title: string; order: number; nodes?: PlanNode[]; ts: string }
   | {
       k: 'record'; id: string; status: SubtaskStatus; symbols: string[]; assumes: string[];
       chose?: string; rejected?: string; why?: string; by?: 'agent' | 'developer'; sigs?: Record<string, string>; ts: string;
@@ -27,6 +27,15 @@ export type OutcomeEvent =
   | { k: 'query'; qid: string; ts: string; error: string; terms: string[]; symbols: string[]; ranking: RankedEntry[]; weights: Record<string, number> }
   | { k: 'check'; qid: string; id: string; result: 'confirmed' | 'cleared'; rank: number; band: string; signals: Record<string, number>; ts: string }
   | { k: 'miss'; qid: string; note: string; ts: string };
+
+/** Ephemeral per-prompt gate. Not history: the hook, the panel and the plan op overwrite it freely. */
+export interface Gate {
+  /** a prompt arrived and no plan has been written for it yet */
+  pending: boolean;
+  /** the one subtask the developer let the agent implement */
+  allowed: string | null;
+  ts: string;
+}
 
 export const now = () => new Date().toISOString();
 
@@ -49,7 +58,7 @@ export class Store {
     for (const f of ['intent.jsonl', 'outcomes.jsonl']) if (!fs.existsSync(this.p(f))) fs.writeFileSync(this.p(f), '');
     if (!fs.existsSync(this.p('config.json'))) fs.writeFileSync(this.p('config.json'), JSON.stringify({ include: undefined, exclude: [] }, null, 2) + '\n');
     const gi = this.p('.gitignore');
-    if (!fs.existsSync(gi)) fs.writeFileSync(gi, 'cache/\n');
+    if (!fs.existsSync(gi)) fs.writeFileSync(gi, 'cache/\ngate.json\n');
   }
 
   /* ---------- jsonl ---------- */
@@ -91,6 +100,20 @@ export class Store {
     this.append('outcomes.jsonl', ev);
   }
 
+  /* ---------- gate ---------- */
+
+  readGate(): Gate {
+    try {
+      return JSON.parse(fs.readFileSync(this.p('gate.json'), 'utf8'));
+    } catch {
+      return { pending: false, allowed: null, ts: '' };
+    }
+  }
+  writeGate(g: Omit<Gate, 'ts'>) {
+    fs.mkdirSync(this.dir, { recursive: true });
+    fs.writeFileSync(this.p('gate.json'), JSON.stringify({ ...g, ts: now() }));
+  }
+
   /* ---------- structure snapshot ---------- */
 
   readSnapshot(): Snapshot | null {
@@ -125,7 +148,7 @@ export function foldIntent(events: IntentEvent[]): IntentState {
     switch (ev.k) {
       case 'plan': {
         removed.delete(ev.id);
-        tasks.set(ev.id, { id: ev.id, feature: ev.feature, title: ev.title, status: 'planned', symbols: [], assumes: [], ts: ev.ts, createdTs: ev.ts, order: ev.order });
+        tasks.set(ev.id, { id: ev.id, feature: ev.feature, title: ev.title, status: 'planned', symbols: [], assumes: [], ts: ev.ts, createdTs: ev.ts, order: ev.order, nodes: ev.nodes });
         break;
       }
       case 'record': {

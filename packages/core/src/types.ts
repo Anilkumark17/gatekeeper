@@ -94,6 +94,13 @@ export interface Snapshot {
 
 export type SubtaskStatus = 'planned' | 'done' | 'failed' | 'skipped';
 
+export interface PlanNode {
+  /** `<file path>` or `<file path>:<symbol>`; may not exist yet */
+  target: string;
+  /** what this node is about, one line */
+  note?: string;
+}
+
 export interface Subtask {
   id: string;
   feature: string;
@@ -109,6 +116,7 @@ export interface Subtask {
   ts: string; // last update
   createdTs: string;
   order: number;
+  nodes?: PlanNode[];
 }
 
 export interface Rank {

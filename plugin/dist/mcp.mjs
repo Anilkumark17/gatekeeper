@@ -8361,18 +8361,18 @@ var require_parse = __commonJS({
         }
         if (value === CHAR_LEFT_SQUARE_BRACKET) {
           brackets++;
-          let next;
-          while (index < length && (next = advance())) {
-            value += next;
-            if (next === CHAR_LEFT_SQUARE_BRACKET) {
+          let next2;
+          while (index < length && (next2 = advance())) {
+            value += next2;
+            if (next2 === CHAR_LEFT_SQUARE_BRACKET) {
               brackets++;
               continue;
             }
-            if (next === CHAR_BACKSLASH) {
+            if (next2 === CHAR_BACKSLASH) {
               value += advance();
               continue;
             }
-            if (next === CHAR_RIGHT_SQUARE_BRACKET) {
+            if (next2 === CHAR_RIGHT_SQUARE_BRACKET) {
               brackets--;
               if (brackets === 0) {
                 break;
@@ -8400,20 +8400,20 @@ var require_parse = __commonJS({
         }
         if (value === CHAR_DOUBLE_QUOTE || value === CHAR_SINGLE_QUOTE || value === CHAR_BACKTICK) {
           const open = value;
-          let next;
+          let next2;
           if (options.keepQuotes !== true) {
             value = "";
           }
-          while (index < length && (next = advance())) {
-            if (next === CHAR_BACKSLASH) {
-              value += next + advance();
+          while (index < length && (next2 = advance())) {
+            if (next2 === CHAR_BACKSLASH) {
+              value += next2 + advance();
               continue;
             }
-            if (next === open) {
-              if (options.keepQuotes === true) value += next;
+            if (next2 === open) {
+              if (options.keepQuotes === true) value += next2;
               break;
             }
-            value += next;
+            value += next2;
           }
           push({ type: "text", value });
           continue;
@@ -8918,7 +8918,7 @@ var require_scan = __commonJS({
       };
       while (index < length) {
         code = advance();
-        let next;
+        let next2;
         if (code === CHAR_BACKWARD_SLASH) {
           backslashes = token.backslashes = true;
           code = advance();
@@ -9029,13 +9029,13 @@ var require_scan = __commonJS({
           break;
         }
         if (code === CHAR_LEFT_SQUARE_BRACKET) {
-          while (eos() !== true && (next = advance())) {
-            if (next === CHAR_BACKWARD_SLASH) {
+          while (eos() !== true && (next2 = advance())) {
+            if (next2 === CHAR_BACKWARD_SLASH) {
               backslashes = token.backslashes = true;
               advance();
               continue;
             }
-            if (next === CHAR_RIGHT_SQUARE_BRACKET) {
+            if (next2 === CHAR_RIGHT_SQUARE_BRACKET) {
               isBracket = token.isBracket = true;
               isGlob = token.isGlob = true;
               finished = true;
@@ -9636,14 +9636,14 @@ var require_parse2 = __commonJS({
           continue;
         }
         if (value === "\\") {
-          const next = peek();
-          if (next === "/" && opts.bash !== true) {
+          const next2 = peek();
+          if (next2 === "/" && opts.bash !== true) {
             continue;
           }
-          if (next === "." || next === ";") {
+          if (next2 === "." || next2 === ";") {
             continue;
           }
-          if (!next) {
+          if (!next2) {
             value += "\\";
             push({ type: "text", value });
             continue;
@@ -9881,12 +9881,12 @@ var require_parse2 = __commonJS({
             continue;
           }
           if (prev && prev.type === "paren") {
-            const next = peek();
+            const next2 = peek();
             let output = value;
-            if (next === "<" && !utils.supportsLookbehinds()) {
+            if (next2 === "<" && !utils.supportsLookbehinds()) {
               throw new Error("Node.js v10 or higher is required for regex lookbehinds");
             }
-            if (prev.value === "(" && !/[!=<:]/.test(next) || next === "<" && !/<([!=]|\w+>)/.test(remaining())) {
+            if (prev.value === "(" && !/[!=<:]/.test(next2) || next2 === "<" && !/<([!=]|\w+>)/.test(remaining())) {
               output = `\\${value}`;
             }
             push({ type: "text", value, output });
@@ -10695,7 +10695,7 @@ var require_merge2 = __commonJS({
           streams = [streams];
         }
         let pipesCount = streams.length + 1;
-        function next() {
+        function next2() {
           if (--pipesCount > 0) {
             return;
           }
@@ -10709,13 +10709,13 @@ var require_merge2 = __commonJS({
             if (doPipeError) {
               stream.removeListener("error", onerror);
             }
-            next();
+            next2();
           }
           function onerror(err2) {
             mergedStream.emit("error", err2);
           }
           if (stream._readableState.endEmitted) {
-            return next();
+            return next2();
           }
           stream.on("merge2UnpipeEnd", onend);
           stream.on("end", onend);
@@ -10728,7 +10728,7 @@ var require_merge2 = __commonJS({
         for (let i2 = 0; i2 < streams.length; i2++) {
           pipe2(streams[i2]);
         }
-        next();
+        next2();
       }
       function endStream() {
         merging = false;
@@ -11629,15 +11629,15 @@ var require_queue = __commonJS({
         if (holder) {
           cache.release(holder);
         }
-        var next = queueHead;
-        if (next && _running <= _concurrency) {
+        var next2 = queueHead;
+        if (next2 && _running <= _concurrency) {
           if (!self2.paused) {
             if (queueTail === queueHead) {
               queueTail = null;
             }
-            queueHead = next.next;
-            next.next = null;
-            worker.call(context2, next.value, next.worked);
+            queueHead = next2.next;
+            next2.next = null;
+            worker.call(context2, next2.value, next2.worked);
             if (queueTail === null) {
               self2.empty();
             }
@@ -11664,7 +11664,7 @@ var require_queue = __commonJS({
         queueHead = null;
         queueTail = null;
         while (current) {
-          var next = current.next;
+          var next2 = current.next;
           var callback = current.callback;
           var errorHandler2 = current.errorHandler;
           var val = current.value;
@@ -11678,7 +11678,7 @@ var require_queue = __commonJS({
           }
           callback.call(context3, new Error("abort"));
           cache.release(current);
-          current = next;
+          current = next2;
         }
         self2.drain = noop;
       }
@@ -28183,18 +28183,18 @@ var Graph = class {
       frontier.push(s);
     }
     for (let h = 1; h <= hops; h++) {
-      const next = [];
+      const next2 = [];
       for (const id of frontier) {
         for (const e of this.outEdges(id)) if (!dist.has(e.to) && this.nodes.has(e.to)) {
           dist.set(e.to, h);
-          next.push(e.to);
+          next2.push(e.to);
         }
         for (const src of this.rev.get(id) ?? []) if (!dist.has(src)) {
           dist.set(src, h);
-          next.push(src);
+          next2.push(src);
         }
       }
-      frontier = next;
+      frontier = next2;
     }
     const edges = [];
     for (const id of dist.keys()) {
@@ -28214,16 +28214,16 @@ var Graph = class {
     let h = 0;
     while (frontier.length) {
       h++;
-      const next = [];
+      const next2 = [];
       for (const cur of frontier) {
         for (const src of this.rev.get(cur) ?? []) {
           if (!dist.has(src)) {
             dist.set(src, h);
-            next.push(src);
+            next2.push(src);
           }
         }
       }
-      frontier = next;
+      frontier = next2;
     }
     for (const s of seeds) dist.delete(s);
     return dist;
@@ -28245,20 +28245,20 @@ var Graph = class {
     const prev = /* @__PURE__ */ new Map([[a, null]]);
     let frontier = [a];
     while (frontier.length && !prev.has(b)) {
-      const next = [];
+      const next2 = [];
       for (const id of frontier) {
         for (const e of this.outEdges(id)) if (!prev.has(e.to) && this.nodes.has(e.to)) {
           prev.set(e.to, { from: id, kind: e.kind, dir: "out" });
-          next.push(e.to);
+          next2.push(e.to);
         }
         for (const src of this.rev.get(id) ?? []) {
           if (prev.has(src)) continue;
           const e = this.outEdges(src).find((x) => x.to === id);
           prev.set(src, { from: id, kind: e.kind, dir: "in" });
-          next.push(src);
+          next2.push(src);
         }
       }
-      frontier = next;
+      frontier = next2;
     }
     if (!prev.has(b)) return null;
     const steps = [];
@@ -33339,7 +33339,7 @@ var Store = class {
     for (const f of ["intent.jsonl", "outcomes.jsonl"]) if (!fs5.existsSync(this.p(f))) fs5.writeFileSync(this.p(f), "");
     if (!fs5.existsSync(this.p("config.json"))) fs5.writeFileSync(this.p("config.json"), JSON.stringify({ include: void 0, exclude: [] }, null, 2) + "\n");
     const gi = this.p(".gitignore");
-    if (!fs5.existsSync(gi)) fs5.writeFileSync(gi, "cache/\n");
+    if (!fs5.existsSync(gi)) fs5.writeFileSync(gi, "cache/\ngate.json\n");
   }
   /* ---------- jsonl ---------- */
   readJsonl(file) {
@@ -33375,6 +33375,18 @@ var Store = class {
   appendOutcome(ev) {
     this.append("outcomes.jsonl", ev);
   }
+  /* ---------- gate ---------- */
+  readGate() {
+    try {
+      return JSON.parse(fs5.readFileSync(this.p("gate.json"), "utf8"));
+    } catch {
+      return { pending: false, allowed: null, ts: "" };
+    }
+  }
+  writeGate(g) {
+    fs5.mkdirSync(this.dir, { recursive: true });
+    fs5.writeFileSync(this.p("gate.json"), JSON.stringify({ ...g, ts: now() }));
+  }
   /* ---------- structure snapshot ---------- */
   readSnapshot() {
     try {
@@ -33398,7 +33410,7 @@ function foldIntent(events) {
     switch (ev.k) {
       case "plan": {
         removed.delete(ev.id);
-        tasks.set(ev.id, { id: ev.id, feature: ev.feature, title: ev.title, status: "planned", symbols: [], assumes: [], ts: ev.ts, createdTs: ev.ts, order: ev.order });
+        tasks.set(ev.id, { id: ev.id, feature: ev.feature, title: ev.title, status: "planned", symbols: [], assumes: [], ts: ev.ts, createdTs: ev.ts, order: ev.order, nodes: ev.nodes });
         break;
       }
       case "record": {
@@ -34207,8 +34219,8 @@ function metaReport(ws2) {
       const pc = signals[s].confirmed / nConf;
       const px = signals[s].cleared / nClr;
       const lift = (pc + 0.1) / (px + 0.1);
-      const next = current[s] * Math.sqrt(lift);
-      proposed[s] = Math.round(Math.min(current[s] * 2, Math.max(current[s] * 0.5, next)) * 10) / 10;
+      const next2 = current[s] * Math.sqrt(lift);
+      proposed[s] = Math.round(Math.min(current[s] * 2, Math.max(current[s] * 0.5, next2)) * 10) / 10;
     }
     const file = ws2.store.p("proposals", `weights-${now().replace(/[:.]/g, "-")}.json`);
     fs9.mkdirSync(ws2.store.p("proposals"), { recursive: true });
@@ -34242,6 +34254,7 @@ function rejectProposal(file) {
 // packages/core/src/ops.ts
 var ops_exports = {};
 __export(ops_exports, {
+  approve: () => approve,
   check: () => check2,
   context: () => context,
   edit: () => edit,
@@ -34249,6 +34262,7 @@ __export(ops_exports, {
   litBands: () => litBands,
   meta: () => meta,
   miss: () => miss,
+  next: () => next,
   plan: () => plan,
   record: () => record2,
   remove: () => remove,
@@ -34270,14 +34284,17 @@ function plan(ws2, a) {
   if (a.replace) {
     for (const s of state.tasks.values()) if (s.feature === a.feature && s.status === "planned") ws2.store.appendIntent({ k: "remove", id: s.id, ts: t });
   }
-  const next = nextTaskId(ev);
+  const next2 = nextTaskId(ev);
   const base = [...state.tasks.values()].filter((s) => s.feature === a.feature).length;
-  const created = a.tasks.map((title, i2) => {
-    const id = next();
-    ws2.store.appendIntent({ k: "plan", id, feature: a.feature, title, order: base + i2, ts: t });
+  const created = a.tasks.map((task, i2) => {
+    const id = next2();
+    const title = typeof task === "string" ? task : task.title;
+    const nodes = typeof task === "string" || !task.nodes?.length ? void 0 : task.nodes;
+    ws2.store.appendIntent({ k: "plan", id, feature: a.feature, title, order: base + i2, nodes, ts: t });
     return { id, title };
   });
-  return { feature: a.feature, tasks: created };
+  ws2.store.writeGate({ pending: false, allowed: null });
+  return { feature: a.feature, tasks: created, next: "Stop. The developer approves each subtask in the panel. Then call gk_next." };
 }
 async function record2(ws2, a) {
   ws2.store.init();
@@ -34315,6 +34332,7 @@ async function record2(ws2, a) {
     ts: now()
   });
   await ws2.outer();
+  if (ws2.store.readGate().allowed === a.id && (a.status ?? "done") !== "planned") ws2.store.writeGate({ pending: false, allowed: null });
   return { ok: true, id: a.id, symbols, warnings, renamed: delta.renamed };
 }
 function edit(ws2, a) {
@@ -34327,6 +34345,9 @@ function remove(ws2, a) {
   const t = now();
   for (const id of ids) if (state.tasks.has(id)) ws2.store.appendIntent({ k: "remove", id, ts: t });
   return { ok: true, removed: ids.filter((i2) => state.tasks.has(i2)) };
+}
+function currentTask(ws2) {
+  return [...ws2.intent().tasks.values()].filter((t) => t.status === "planned").sort((x, y) => x.createdTs.localeCompare(y.createdTs) || x.order - y.order)[0];
 }
 function tree(ws2, a = {}) {
   const state = ws2.intent();
@@ -34350,14 +34371,15 @@ function tree(ws2, a = {}) {
         chose: t.chose,
         rejected: t.rejected,
         why: t.why,
+        nodes: t.nodes ?? [],
         symbols: t.symbols.map((s) => {
-          const cur = followRename(state.renames, s);
-          const n = ws2.graph.get(cur);
+          const cur2 = followRename(state.renames, s);
+          const n = ws2.graph.get(cur2);
           const recorded = t.sigs?.[s];
           return {
-            id: cur,
+            id: cur2,
             state: n ? "ok" : "missing",
-            renamedFrom: cur !== s ? s : void 0,
+            renamedFrom: cur2 !== s ? s : void 0,
             drifted: !!(n && recorded && n.props.sig && n.props.sig !== recorded),
             file: n?.props.file,
             line: n?.props.line
@@ -34366,7 +34388,34 @@ function tree(ws2, a = {}) {
       }))
     });
   }
-  return { app: ws2.root.split(/[\\/]/).pop() ?? "app", features };
+  const g = ws2.store.readGate();
+  const cur = currentTask(ws2);
+  return { app: ws2.root.split(/[\\/]/).pop() ?? "app", features, gate: { pending: g.pending, current: cur?.id ?? null, approved: !!cur && g.allowed === cur.id } };
+}
+function approve(ws2, a = {}) {
+  const cur = currentTask(ws2);
+  if (!cur) return { ok: false, error: "no planned subtask to approve" };
+  if (a.id && a.id !== cur.id) return { ok: false, error: `${a.id} is not next; ${cur.id} is` };
+  ws2.store.writeGate({ pending: false, allowed: cur.id });
+  return { ok: true, id: cur.id };
+}
+function next(ws2) {
+  const cur = currentTask(ws2);
+  if (!cur) return { done: true, message: "No planned subtasks left." };
+  const approved = ws2.store.readGate().allowed === cur.id;
+  const nodes = cur.nodes ?? [];
+  const known = nodes.map((n) => n.target).filter((s) => ws2.graph.find(s).length);
+  const pack = known.length ? buildContext(ws2, { symbols: known, budget: 3e3 }).text : "";
+  const lines = [`Feature: ${cur.feature}`, `${cur.id}: ${cur.title}`, ...nodes.map((n) => `  - ${n.target}${n.note ? `: ${n.note}` : ""}`)];
+  return {
+    id: cur.id,
+    title: cur.title,
+    feature: cur.feature,
+    approved,
+    nodes,
+    instruction: approved ? `Implement ${cur.id} only, touching the nodes below. Then gk_record it immediately.` : `${cur.id} is not approved. Stop. Tell the developer to press Approve in the GateKeeper panel, then call gk_next again.`,
+    prompt: approved ? lines.join("\n") + (pack ? "\n\nContext:\n" + pack : "") : void 0
+  };
 }
 var ICON = { planned: "[ ]", done: "[x]", failed: "[!]", skipped: "[-]" };
 function renderTree(t) {
@@ -34505,9 +34554,19 @@ tool(
 );
 tool(
   "gk_plan",
-  "Write the subtask decomposition (3 to 7 units of the change, never steps of your own process). The editor panel renders the tree immediately. replace=true redecomposes from scratch.",
-  { feature: external_exports.string(), tasks: external_exports.array(external_exports.string()).min(1), replace: external_exports.boolean().optional() },
+  "Write the subtask decomposition (3 to 7 units of the change, never steps of your own process). Each task is a branch; its nodes are the files or file:symbol targets it touches, each with a one-line note. The editor panel renders the tree immediately. replace=true redecomposes from scratch. Writing code is blocked until the developer approves each subtask in the panel.",
+  {
+    feature: external_exports.string(),
+    tasks: external_exports.array(external_exports.union([external_exports.string(), external_exports.object({ title: external_exports.string(), nodes: external_exports.array(external_exports.object({ target: external_exports.string(), note: external_exports.string().optional() })).optional() })])).min(1),
+    replace: external_exports.boolean().optional()
+  },
   (w, a) => ops_exports.plan(w, a)
+);
+tool(
+  "gk_next",
+  "Returns ONLY the next subtask: its nodes and graph context for those nodes, as a ready prompt. Call before writing code for each subtask. If not approved yet, it says to wait for the developer.",
+  {},
+  (w) => ops_exports.next(w)
 );
 tool(
   "gk_record",

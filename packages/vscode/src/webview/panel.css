@@ -79,3 +79,5 @@ summary { cursor: pointer; padding: 2px 0; }
 .card .actions { display: flex; gap: 6px; margin-top: 4px; align-items: center; }
 .empty { padding: 24px; color: var(--vscode-descriptionForeground); }
 .badge-checked { font-weight: 600; }
+.feat { margin: 6px 0 2px; }
+.task.now { border-left-color: var(--vscode-focusBorder); }

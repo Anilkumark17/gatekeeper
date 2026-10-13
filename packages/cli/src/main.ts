@@ -98,6 +98,8 @@ async function main() {
         id: need('id', v.id), status: (v.status as 'done') ?? 'done', symbols: v.symbol, assumes: [...(v.assumes ?? []), ...(v.assume ?? [])],
         chose: v.chose, rejected: v.rejected, why: v.why, by: v.by as 'agent' | 'developer' | undefined,
       }));
+    case 'next':
+      return out(ops.next(ws));
     case 'tree': {
       const t = ops.tree(ws, { feature: v.feature });
       if (v.human) return void console.log(ops.renderTree(t));

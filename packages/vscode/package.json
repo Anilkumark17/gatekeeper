@@ -2,7 +2,7 @@
   "name": "gatekeeper-vscode",
   "displayName": "GateKeeper",
   "description": "Editor-native reasoning harness for AI coding agents: live code graph joined to the intent behind it.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "gatekeeper",
   "type": "commonjs",
   "engines": { "vscode": "^1.93.0" },

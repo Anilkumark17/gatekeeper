@@ -48,9 +48,16 @@ tool('gk_context', 'BUILD MODE first call. Budgeted (~8k token) context pack for
   { task: z.string().optional(), symbols: z.array(z.string()).optional(), budget: z.number().optional() },
   (w, a) => ops.context(w, a));
 
-tool('gk_plan', 'Write the subtask decomposition (3 to 7 units of the change, never steps of your own process). The editor panel renders the tree immediately. replace=true redecomposes from scratch.',
-  { feature: z.string(), tasks: z.array(z.string()).min(1), replace: z.boolean().optional() },
+tool('gk_plan', 'Write the subtask decomposition (3 to 7 units of the change, never steps of your own process). Each task is a branch; its nodes are the files or file:symbol targets it touches, each with a one-line note. The editor panel renders the tree immediately. replace=true redecomposes from scratch. Writing code is blocked until the developer approves each subtask in the panel.',
+  {
+    feature: z.string(),
+    tasks: z.array(z.union([z.string(), z.object({ title: z.string(), nodes: z.array(z.object({ target: z.string(), note: z.string().optional() })).optional() })])).min(1),
+    replace: z.boolean().optional(),
+  },
   (w, a) => ops.plan(w, a));
+
+tool('gk_next', 'Returns ONLY the next subtask: its nodes and graph context for those nodes, as a ready prompt. Call before writing code for each subtask. If not approved yet, it says to wait for the developer.',
+  {}, (w) => ops.next(w));
 
 tool('gk_record', 'Call IMMEDIATELY after each subtask code is written, never batched. assumes = what must stay TRUE for the code to keep working (not what it does).',
   {

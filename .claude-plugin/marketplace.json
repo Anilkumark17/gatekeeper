@@ -8,7 +8,7 @@
       "name": "gatekeeper",
       "source": "./plugin",
       "description": "Reasoning harness for coding agents: live code graph + recorded intent + suspect ranking.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ],
   "metadata": {

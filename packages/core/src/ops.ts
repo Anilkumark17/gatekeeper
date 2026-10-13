@@ -4,7 +4,7 @@ import { buildContext } from './context.js';
 import { rankSuspects } from './suspects.js';
 import { metaReport, acceptProposal, rejectProposal } from './meta.js';
 import { ago } from './text.js';
-import type { Subtask, SubtaskStatus } from './types.js';
+import type { PlanNode, Subtask, SubtaskStatus } from './types.js';
 
 /**
  * Operations shared by the CLI, the MCP server and the editor. Each returns plain JSON.
@@ -16,7 +16,9 @@ export function init(ws: Workspace) {
   return { ok: true, dir: ws.store.dir };
 }
 
-export function plan(ws: Workspace, a: { feature: string; tasks: string[]; replace?: boolean }) {
+export type PlanTask = string | { title: string; nodes?: PlanNode[] };
+
+export function plan(ws: Workspace, a: { feature: string; tasks: PlanTask[]; replace?: boolean }) {
   ws.store.init();
   const ev = ws.store.intentEvents();
   const state = ws.intent();
@@ -26,12 +28,16 @@ export function plan(ws: Workspace, a: { feature: string; tasks: string[]; repla
   }
   const next = nextTaskId(ev);
   const base = [...state.tasks.values()].filter((s) => s.feature === a.feature).length;
-  const created = a.tasks.map((title, i) => {
+  const created = a.tasks.map((task, i) => {
     const id = next();
-    ws.store.appendIntent({ k: 'plan', id, feature: a.feature, title, order: base + i, ts: t });
+    const title = typeof task === 'string' ? task : task.title;
+    const nodes = typeof task === 'string' || !task.nodes?.length ? undefined : task.nodes;
+    ws.store.appendIntent({ k: 'plan', id, feature: a.feature, title, order: base + i, nodes, ts: t });
     return { id, title };
   });
-  return { feature: a.feature, tasks: created };
+  // a plan lifts the "plan first" block but approves nothing: the developer approves each subtask
+  ws.store.writeGate({ pending: false, allowed: null });
+  return { feature: a.feature, tasks: created, next: 'Stop. The developer approves each subtask in the panel. Then call gk_next.' };
 }
 
 export interface RecordArgs {
@@ -73,6 +79,7 @@ export async function record(ws: Workspace, a: RecordArgs) {
     chose: a.chose, rejected: a.rejected, why: a.why, by: a.by ?? 'agent', sigs, ts: now(),
   });
   await ws.outer(); // persist the snapshot this record was made against
+  if (ws.store.readGate().allowed === a.id && (a.status ?? 'done') !== 'planned') ws.store.writeGate({ pending: false, allowed: null });
   return { ok: true, id: a.id, symbols, warnings, renamed: delta.renamed };
 }
 
@@ -108,6 +115,7 @@ export interface TreeTask {
   chose?: string;
   rejected?: string;
   why?: string;
+  nodes: PlanNode[];
   symbols: TreeSymbol[];
 }
 export interface TreeFeature {
@@ -115,7 +123,21 @@ export interface TreeFeature {
   tasks: TreeTask[];
 }
 
-export function tree(ws: Workspace, a: { feature?: string } = {}): { app: string; features: TreeFeature[] } {
+export interface TreeGate {
+  /** a prompt arrived and the plan is not written yet */
+  pending: boolean;
+  /** first planned subtask: the only one that can be approved or implemented now */
+  current: string | null;
+  approved: boolean;
+}
+
+function currentTask(ws: Workspace): Subtask | undefined {
+  return [...ws.intent().tasks.values()]
+    .filter((t) => t.status === 'planned')
+    .sort((x, y) => x.createdTs.localeCompare(y.createdTs) || x.order - y.order)[0];
+}
+
+export function tree(ws: Workspace, a: { feature?: string } = {}): { app: string; features: TreeFeature[]; gate: TreeGate } {
   const state = ws.intent();
   const byFeature = new Map<string, Subtask[]>();
   for (const t of state.tasks.values()) {
@@ -128,7 +150,7 @@ export function tree(ws: Workspace, a: { feature?: string } = {}): { app: string
     features.push({
       feature,
       tasks: ts.map((t) => ({
-        id: t.id, title: t.title, status: t.status, by: t.by, age: ago(t.ts), assumes: t.assumes, chose: t.chose, rejected: t.rejected, why: t.why,
+        id: t.id, title: t.title, status: t.status, by: t.by, age: ago(t.ts), assumes: t.assumes, chose: t.chose, rejected: t.rejected, why: t.why, nodes: t.nodes ?? [],
         symbols: t.symbols.map((s) => {
           const cur = followRename(state.renames, s);
           const n = ws.graph.get(cur);
@@ -141,7 +163,36 @@ export function tree(ws: Workspace, a: { feature?: string } = {}): { app: string
       })),
     });
   }
-  return { app: ws.root.split(/[\\/]/).pop() ?? 'app', features };
+  const g = ws.store.readGate();
+  const cur = currentTask(ws);
+  return { app: ws.root.split(/[\\/]/).pop() ?? 'app', features, gate: { pending: g.pending, current: cur?.id ?? null, approved: !!cur && g.allowed === cur.id } };
+}
+
+/** Developer says go for the current subtask. Only the panel calls this; the agent has no tool for it. */
+export function approve(ws: Workspace, a: { id?: string } = {}) {
+  const cur = currentTask(ws);
+  if (!cur) return { ok: false, error: 'no planned subtask to approve' };
+  if (a.id && a.id !== cur.id) return { ok: false, error: `${a.id} is not next; ${cur.id} is` };
+  ws.store.writeGate({ pending: false, allowed: cur.id });
+  return { ok: true, id: cur.id };
+}
+
+/** The next subtask only: its tree slice plus graph context for just its nodes. Never the whole plan. */
+export function next(ws: Workspace) {
+  const cur = currentTask(ws);
+  if (!cur) return { done: true, message: 'No planned subtasks left.' };
+  const approved = ws.store.readGate().allowed === cur.id;
+  const nodes = cur.nodes ?? [];
+  const known = nodes.map((n) => n.target).filter((s) => ws.graph.find(s).length);
+  const pack = known.length ? buildContext(ws, { symbols: known, budget: 3000 }).text : '';
+  const lines = [`Feature: ${cur.feature}`, `${cur.id}: ${cur.title}`, ...nodes.map((n) => `  - ${n.target}${n.note ? `: ${n.note}` : ''}`)];
+  return {
+    id: cur.id, title: cur.title, feature: cur.feature, approved, nodes,
+    instruction: approved
+      ? `Implement ${cur.id} only, touching the nodes below. Then gk_record it immediately.`
+      : `${cur.id} is not approved. Stop. Tell the developer to press Approve in the GateKeeper panel, then call gk_next again.`,
+    prompt: approved ? lines.join('\n') + (pack ? '\n\nContext:\n' + pack : '') : undefined,
+  };
 }
 
 const ICON: Record<string, string> = { planned: '[ ]', done: '[x]', failed: '[!]', skipped: '[-]' };

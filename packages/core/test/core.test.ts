@@ -120,3 +120,33 @@ test('meta never applies weights silently', async () => {
   assert.equal(r.proposal, null);
   assert.ok(!fs.existsSync(ws.store.p('weights.json')));
 });
+
+test('gate: next serves only the approved subtask slice; record advances it', async () => {
+  const d = fixture();
+  const ws = await Workspace.open(d);
+  ops.init(ws);
+  ws.store.writeGate({ pending: true, allowed: null });
+  ops.plan(ws, {
+    feature: 'quota',
+    tasks: [
+      { title: 'Check quota', nodes: [{ target: 'src/quota.ts:checkQuota', note: 'reject over-limit' }] },
+      { title: 'Wire handler', nodes: [{ target: 'src/api.ts:handle' }] },
+    ],
+  });
+  assert.equal(ws.store.readGate().pending, false);
+  const t0 = ops.tree(ws);
+  assert.equal(t0.gate.current, 'ST-001');
+  assert.equal(t0.gate.approved, false);
+  const n0 = ops.next(ws) as any;
+  assert.equal(n0.approved, false);
+  assert.equal(n0.prompt, undefined);
+  assert.equal(ops.approve(ws, { id: 'ST-002' }).ok, false);
+  assert.equal(ops.approve(ws, { id: 'ST-001' }).ok, true);
+  const n1 = ops.next(ws) as any;
+  assert.equal(n1.approved, true);
+  assert.match(n1.prompt, /ST-001/);
+  assert.doesNotMatch(n1.prompt, /Wire handler/);
+  await ops.record(ws, { id: 'ST-001', symbols: ['src/quota.ts:checkQuota'] });
+  assert.equal(ws.store.readGate().allowed, null);
+  assert.equal(ops.tree(ws).gate.current, 'ST-002');
+});

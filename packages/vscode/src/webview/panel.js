@@ -6,7 +6,7 @@
   const BAND = { likely: { glyph: '▲', text: 'likely' }, possible: { glyph: '◇', text: 'possible' }, cleared: { glyph: '✓', text: 'cleared' } };
 
   const state = {
-    mode: (vscode.getState() || {}).mode || 'graph',
+    mode: (vscode.getState() || {}).mode || 'tree',
     nodes: new Map(), edges: new Map(), pos: new Map(), els: new Map(), edgeEls: new Map(),
     focus: null, tree: null, debug: null, total: 0, shown: 0, hops: 1,
     view: { x: -300, y: -200, w: 600, h: 400 }, fitted: false, simTicks: 0, raf: 0,
@@ -242,29 +242,42 @@
   const h = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function renderTree() {
     const t = state.tree, el = $('treeView');
-    if (!t || !t.features.length) { el.innerHTML = '<div class="empty">No plan yet. The agent writes one with <code>gk plan</code>; it appears here the moment it does.</div>'; return; }
-    const open = new Set([...el.querySelectorAll('details[open]')].map((d) => d.dataset.key));
-    const firstPaint = !el.children.length;
-    let out = `<details data-key="app" open><summary><b>${h(t.app)}</b></summary>`;
+    if (t && t.gate && t.gate.pending) { el.innerHTML = '<div class="empty">Prompt received. Waiting for the agent to decompose the task…</div>'; return; }
+    if (!t || !t.features.length) { el.innerHTML = '<div class="empty">No plan yet. Send a prompt; the agent decomposes it here.</div>'; return; }
+    const cur = t.gate && t.gate.current;
+    let out = '';
     for (const f of t.features) {
-      out += `<details data-key="f:${h(f.feature)}" ${firstPaint || open.has('f:' + f.feature) ? 'open' : ''}><summary>${h(f.feature)} <span class="dim">(${f.tasks.length})</span><span class="row-actions"><button data-act="rmf" data-f="${h(f.feature)}" aria-label="Remove feature ${h(f.feature)}" title="Remove feature">×</button></span></summary>`;
+      out += '<div class="feat"><b>' + h(f.feature) + '</b></div>';
       for (const k of f.tasks) {
-        out += `<div class="task"><span class="row-actions"><button data-act="edit" data-id="${k.id}" data-title="${h(k.title)}" aria-label="Rename ${k.id}" title="Rename">✎</button><button data-act="rm" data-id="${k.id}" aria-label="Remove ${k.id}" title="Remove from plan">×</button></span>`;
-        out += `<span class="chip ${k.status}">${k.status}</span><b>${k.id}</b> ${h(k.title)} <span class="dim">${k.by ? h(k.by) + ', ' : ''}${h(k.age)}</span>`;
-        for (const a of k.assumes) out += `<div class="assume">${h(a)}</div>`;
-        const dec = [k.chose && 'chose: ' + k.chose, k.rejected && 'rejected: ' + k.rejected, k.why && 'why: ' + k.why].filter(Boolean);
-        if (dec.length) out += `<div class="dim">${h(dec.join(' · '))}</div>`;
-        for (const s of k.symbols) out += `<div class="sym"><a data-act="sel" data-id="${h(s.id)}" tabindex="0" role="link">${h(s.id.slice(s.id.indexOf(':') + 1) || s.id)}</a> <span class="dim">${h(s.file || '')}</span>${s.state === 'missing' ? ' <span class="bad">missing: code no longer has this symbol</span>' : ''}${s.drifted ? ' <span class="warn">changed since recorded: re-check the assumption</span>' : ''}${s.renamedFrom ? ` <span class="dim">(renamed)</span>` : ''}</div>`;
-        out += '</div>';
+        const act = '<span class="row-actions"><button data-act="edit" data-id="' + k.id + '" data-title="' + h(k.title) + '" aria-label="Rename ' + k.id + '" title="Rename">✎</button><button data-act="rm" data-id="' + k.id + '" aria-label="Remove ' + k.id + '" title="Remove from plan">×</button></span>';
+        const head = act + '<span class="chip ' + k.status + '">' + k.status + '</span><b>' + k.id + '</b> ' + h(k.title);
+        if (k.id === cur) {
+          out += '<div class="task now">' + head;
+          for (const n of k.nodes) out += '<div class="sym">' + h(n.target) + (n.note ? ' <span class="dim">' + h(n.note) + '</span>' : '') + '</div>';
+          out += t.gate.approved
+            ? '<div class="dim">Approved. Agent is implementing this one.</div>'
+            : '<div class="actions"><button class="primary" data-act="approve" data-id="' + k.id + '">Approve ' + k.id + '</button></div>';
+          out += '</div>';
+        } else if (k.status === 'planned') {
+          out += '<div class="task">' + head + '</div>';
+        } else {
+          out += '<details class="task"><summary>' + head + '</summary>';
+          for (const n of k.nodes) out += '<div class="sym">' + h(n.target) + (n.note ? ' <span class="dim">' + h(n.note) + '</span>' : '') + '</div>';
+          for (const x of k.assumes) out += '<div class="assume">' + h(x) + '</div>';
+          const dec = [k.chose && 'chose: ' + k.chose, k.rejected && 'rejected: ' + k.rejected, k.why && 'why: ' + k.why].filter(Boolean);
+          if (dec.length) out += '<div class="dim">' + h(dec.join(' · ')) + '</div>';
+          for (const sy of k.symbols) out += '<div class="sym"><a data-act="sel" data-id="' + h(sy.id) + '" tabindex="0" role="link">' + h(sy.id.slice(sy.id.indexOf(':') + 1) || sy.id) + '</a>' + (sy.state === 'missing' ? ' <span class="bad">missing</span>' : '') + (sy.drifted ? ' <span class="warn">changed since recorded</span>' : '') + '</div>';
+          out += '</details>';
+        }
       }
-      out += '</details>';
     }
-    el.innerHTML = out + '</details>';
+    el.innerHTML = out;
   }
   $('treeView').addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const a = b.dataset.act;
     if (a === 'sel') vscode.postMessage({ type: 'select', id: b.dataset.id });
+    else if (a === 'approve') vscode.postMessage({ type: 'approve', id: b.dataset.id });
     else if (a === 'rm') vscode.postMessage({ type: 'removeTask', id: b.dataset.id });
     else if (a === 'rmf') vscode.postMessage({ type: 'removeFeature', feature: b.dataset.f });
     else if (a === 'edit') vscode.postMessage({ type: 'editTask', id: b.dataset.id, title: b.dataset.title });

@@ -20,11 +20,21 @@ fs.copyFileSync('.claude/skills/gatekeeper/SKILL.md', `${P}/skills/gatekeeper/SK
 
 fs.mkdirSync(`${P}/.claude-plugin`, { recursive: true });
 fs.writeFileSync(`${P}/.claude-plugin/plugin.json`, JSON.stringify({
-  name: 'gatekeeper', version: '0.1.0', license: 'MIT',
+  name: 'gatekeeper', version: '0.2.0', license: 'MIT',
   description: 'Reasoning harness for coding agents: live code graph joined to recorded intent (assumptions, decisions), with suspect ranking for debugging.',
 }, null, 2) + '\n');
 
 fs.writeFileSync(`${P}/.mcp.json`, JSON.stringify({ mcpServers: { gatekeeper: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/dist/mcp.mjs'] } } }, null, 2) + '\n');
+
+fs.mkdirSync(`${P}/hooks`, { recursive: true });
+fs.copyFileSync('scripts/gate-hook.mjs', `${P}/hooks/gate.mjs`);
+const hook = (arg) => [{ type: 'command', command: `node "\${CLAUDE_PLUGIN_ROOT}/hooks/gate.mjs" ${arg}` }];
+fs.writeFileSync(`${P}/hooks/hooks.json`, JSON.stringify({
+  hooks: {
+    UserPromptSubmit: [{ hooks: hook('prompt') }],
+    PreToolUse: [{ matcher: 'Edit|Write|MultiEdit|NotebookEdit', hooks: hook('edit') }],
+  },
+}, null, 2) + '\n');
 
 fs.mkdirSync(`${P}/commands`, { recursive: true });
 fs.writeFileSync(`${P}/commands/init.md`, `---
