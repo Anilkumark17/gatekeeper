@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,7 +20,6 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with: { files: packages/vscode/gatekeeper.vsix }
       # Auto-update for users needs a Marketplace listing. Skipped until the token secrets exist.
-      - if: ${{ secrets.VSCE_PAT != '' }}
+      - if: ${{ env.VSCE_PAT != '' }}
         run: npx @vscode/vsce publish --packagePath gatekeeper.vsix --no-dependencies
         working-directory: packages/vscode
-        env: { VSCE_PAT: '${{ secrets.VSCE_PAT }}' }
