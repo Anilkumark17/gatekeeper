@@ -1,0 +1,6 @@
+{
+  "name": "gatekeeper",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Reasoning harness for coding agents: live code graph joined to recorded intent (assumptions, decisions), with suspect ranking for debugging."
+}

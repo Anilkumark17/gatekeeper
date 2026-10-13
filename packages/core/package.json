@@ -1,0 +1,15 @@
+{
+  "name": "@gatekeeper/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@types/micromatch": "^4.0.10",
+    "fast-glob": "^3.3.3",
+    "ignore": "^7.0.12",
+    "micromatch": "^4.0.8",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.25.3"
+  }
+}

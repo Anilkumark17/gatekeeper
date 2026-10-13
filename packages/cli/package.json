@@ -1,0 +1,11 @@
+{
+  "name": "@gatekeeper/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "gk": "dist/gk.mjs"
+  },
+  "dependencies": {
+    "@gatekeeper/core": "*"
+  }
+}

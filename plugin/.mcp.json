@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "gatekeeper": {
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/dist/mcp.mjs"
+      ]
+    }
+  }
+}

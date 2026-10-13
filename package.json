@@ -1,0 +1,22 @@
+{
+  "name": "gatekeeper",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc -b packages/core packages/cli packages/mcp packages/vscode",
+    "test": "node --test --import tsx packages/core/test/*.test.ts",
+    "e2e": "node packages/vscode/test/e2e/run.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "type": "module"
+}

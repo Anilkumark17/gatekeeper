@@ -1,0 +1,35 @@
+{
+  "name": "gatekeeper-vscode",
+  "displayName": "GateKeeper",
+  "description": "Editor-native reasoning harness for AI coding agents: live code graph joined to the intent behind it.",
+  "version": "0.1.0",
+  "publisher": "gatekeeper",
+  "type": "commonjs",
+  "engines": { "vscode": "^1.93.0" },
+  "categories": ["Other", "Debuggers"],
+  "main": "dist/extension.cjs",
+  "activationEvents": ["onStartupFinished", "workspaceContains:.gatekeeper"],
+  "contributes": {
+    "commands": [
+      { "command": "gatekeeper.openPanel", "title": "GateKeeper: Open Panel" },
+      { "command": "gatekeeper.debug", "title": "GateKeeper: Rank Suspects for Symptom…" },
+      { "command": "gatekeeper.debugFromClipboard", "title": "GateKeeper: Rank Suspects from Clipboard" },
+      { "command": "gatekeeper.clearDebug", "title": "GateKeeper: Clear Debug Highlights" },
+      { "command": "gatekeeper.checkSuspect", "title": "GateKeeper: Check a Suspect…" },
+      { "command": "gatekeeper.sync", "title": "GateKeeper: Rebuild Graph (outer loop)" },
+      { "command": "gatekeeper.init", "title": "GateKeeper: Initialize in This Workspace" },
+      { "command": "gatekeeper.focusSymbol", "title": "GateKeeper: Focus Symbol in Panel" }
+    ],
+    "keybindings": [
+      { "command": "gatekeeper.openPanel", "key": "ctrl+alt+g", "mac": "cmd+alt+g" }
+    ],
+    "configuration": {
+      "title": "GateKeeper",
+      "properties": {
+        "gatekeeper.innerLoopBudgetMs": { "type": "number", "default": 300, "description": "Ceiling for the on-save update. Heavier files are marked stale and finished on idle." },
+        "gatekeeper.offerOnTestFailure": { "type": "boolean", "default": true, "description": "Offer to rank suspects when a terminal command exits non-zero." }
+      }
+    }
+  },
+  "scripts": { "package": "node ../../scripts/build.mjs vscode && vsce package --no-dependencies" }
+}
