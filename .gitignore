@@ -3,3 +3,4 @@ dist
 *.vsix
 .gatekeeper/cache/
 *.tsbuildinfo
+!plugin/dist
