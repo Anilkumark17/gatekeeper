@@ -56,7 +56,7 @@ cd gatekeeper
 npm install
 npm run build
 cd packages/vscode
-npx @vscode/vsce package --no-dependencies --allow-missing-repository
+npx @vscode/vsce package --no-dependencies --allow-missing-repository -o gatekeeper.vsix
 code --install-extension gatekeeper.vsix
 ```
 
